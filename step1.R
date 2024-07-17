@@ -1,14 +1,3 @@
-# only for testing!
-# data <- read.csv("examples/exampledata.csv")
-# measurementmodel <- "
-#   f1 =~ v1 + v2 + v3 + v4
-#   f2 =~ v5 + v6 + v7 + v8
-#   v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 ~ 0*1
-#   "
-# source("center_within.R")
-# data <- center_within(data, vars = paste0("v", 1:8), id = "id")
-# id = "id"
-
 step1 <- function(data, measurementmodel, id){
   # data:
   #   a data frame with the indicator and ID variables
@@ -18,9 +7,8 @@ step1 <- function(data, measurementmodel, id){
   #   a character that indicates the id variable (the variable that indicates
   #   which observations belong to which person)
   
-  library(lavaan)
-  
   # estimate the measurement model:
+  # library(lavaan)
   fit <- cfa(measurementmodel,
              data = data,
              orthogonal = TRUE,

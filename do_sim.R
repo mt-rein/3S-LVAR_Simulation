@@ -11,7 +11,9 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
   n <- cond$n[pos]
   obs <- cond$obs[pos]
   rho_gen <- cond$rho_gen[pos] |> as.character()
-  meanvar <- cond$meanvar[pos] |> as.character()
+  variance_means <- cond$variance_means[pos] |> as.character()
+  variance_zeta <- cond$variance_zeta[pos] |> as.character()
+  variance_phi <- cond$variance_phi[pos] |> as.character()
   seed_cond <- cond$seed[pos]
   set.seed(seed_cond)
   
@@ -19,25 +21,24 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
   # AR/CR parameters:
   if(phi_size == "small"){
     phi11_pop <- .25                                                            # effect of f1 on f1
-    phi12_pop <- .15                                                            # effect of f2 on f1
-    phi21_pop <- .15                                                            # effect of f1 on f2
+    phi12_pop <- .125                                                           # effect of f2 on f1
+    phi21_pop <- .125                                                           # effect of f1 on f2
     phi22_pop <- .25                                                            # effect of f2 on f2
     
   }
   
   if(phi_size == "large"){
     phi11_pop <- .5                                                             # effect of f1 on f1
-    phi12_pop <- .3                                                             # effect of f2 on f1
-    phi21_pop <- .3                                                             # effect of f1 on f2
+    phi12_pop <- .25                                                            # effect of f2 on f1
+    phi21_pop <- .25                                                            # effect of f1 on f2
     phi22_pop <- .5                                                             # effect of f2 on f2
   }
   phimat <- matrix(c(phi11_pop, phi21_pop, phi12_pop, phi22_pop), ncol = 2)     # combine into matrix
   
-  
   # innovation (co)variance matrix:
-  zeta1_pop <- 1.5
-  zeta2_pop <- 1.5
-  zeta12_pop <- .5
+  zeta1_pop <- 1.5                                                              # innovation variance of x1
+  zeta2_pop <- 1.5                                                              # innovation variance of x2
+  zeta12_pop <- .5                                                              # innovation covariance between x1 and x2
   zetamat <- matrix(c(zeta1_pop, zeta12_pop, zeta12_pop, zeta2_pop), ncol = 2)
   
   # means on the latent constructs
@@ -59,37 +60,51 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     ## generate factor scores for each individual:
     # create data-generating parameter values from population values:
     # regression parameters:
-    phi11_i <- rtruncnorm(1, a = phi11_pop - .05, b = phi11_pop + .05,
-                                     mean = phi11_pop, sd = .5)
-    phi12_i <- rtruncnorm(1, a = phi12_pop - .05, b = phi12_pop + .05,
-                                     mean = phi12_pop, sd = .5)
-    phi21_i <- rtruncnorm(1, a = phi21_pop - .05, b = phi21_pop + .05,
-                                     mean = phi21_pop, sd = .5)
-    phi22_i <- rtruncnorm(1, a = phi22_pop - .05, b = phi22_pop + .05,
-                                     mean = phi22_pop, sd = .5)
-    phimat_i = matrix(c(phi11_i, phi21_i, phi12_i, phi22_i), ncol = 2)
-    # innovation (co)variances:
-    zeta1_i <- rtruncnorm(1, a = zeta1_pop - .5, b = zeta1_pop + .5,
-                          mean = zeta1_pop, sd = .5)
-    zeta2_i <- rtruncnorm(1, a = zeta2_pop - .5, b = zeta2_pop + .5,
-                          mean = zeta2_pop, sd = .5)
-    zeta12_i <- rtruncnorm(1, a = zeta12_pop - .25, b = zeta12_pop + .25,
-                           mean = zeta12_pop, sd = .5)
-    zetamat_i <- matrix(c(zeta1_i, zeta12_i, zeta12_i, zeta2_i), ncol = 2)
-    # means:
-    if(meanvar == "small"){
-      mu1_i <- rtruncnorm(1, a = mu1 - 2, b = mu1 + 2,             # person specific mean on variable 2
-                          mean = mu1, sd = 1)
-      mu2_i <- rtruncnorm(1, a = mu2 - 2, b = mu2 + 2,             # person specific mean on variable 2
-                          mean = mu2, sd = 1)
+    if(variance_phi == "no"){
+      phimat_i <- phimat
     }
-    if(meanvar == "large"){
-      mu1_i <- rtruncnorm(1, a = mu1 - 4, b = mu1 + 4,             # person specific mean on variable 2
-                          mean = mu1, sd = 2)
-      mu2_i <- rtruncnorm(1, a = mu2 - 4, b = mu2 + 4,             # person specific mean on variable 2
-                          mean = mu2, sd = 4)
+    if(variance_phi == "yes"){
+      # draw individual-specific effects from truncated normal distribution
+      phi11_i <- rtruncnorm(1, a = phi11_pop - .05, b = phi11_pop + .05,
+                            mean = phi11_pop, sd = .5)
+      phi12_i <- rtruncnorm(1, a = phi12_pop - .05, b = phi12_pop + .05,
+                            mean = phi12_pop, sd = .5)
+      phi21_i <- rtruncnorm(1, a = phi21_pop - .05, b = phi21_pop + .05,
+                            mean = phi21_pop, sd = .5)
+      phi22_i <- rtruncnorm(1, a = phi22_pop - .05, b = phi22_pop + .05,
+                            mean = phi22_pop, sd = .5)
+      phimat_i = matrix(c(phi11_i, phi21_i, phi12_i, phi22_i), ncol = 2)
     }
     
+    # innovation (co)variances:
+    if(variance_zeta == "no"){
+      zetamat_i <- zetamat
+    }
+    if(variance_zeta == "yes"){
+      # draw individual-specific (co)variances from truncated normal distribution
+      zeta1_i <- rtruncnorm(1, a = zeta1_pop - .5, b = zeta1_pop + .5,
+                            mean = zeta1_pop, sd = .5)
+      zeta2_i <- rtruncnorm(1, a = zeta2_pop - .5, b = zeta2_pop + .5,
+                            mean = zeta2_pop, sd = .5)
+      zeta12_i <- rtruncnorm(1, a = zeta12_pop - .25, b = zeta12_pop + .25,
+                             mean = zeta12_pop, sd = .5)
+      zetamat_i <- matrix(c(zeta1_i, zeta12_i, zeta12_i, zeta2_i), ncol = 2)
+    }
+    
+    # means:
+    if(variance_means == "no"){
+      mu1_i <- mu1
+      mu2_i <- mu2
+    }
+    if(variance_means == "yes"){
+      # draw individual-specific means from truncated normal distribution
+      mu1_i <- rtruncnorm(1, a = mu1 - 2, b = mu1 + 2,
+                          mean = mu1, sd = 1)
+      mu2_i <- rtruncnorm(1, a = mu2 - 2, b = mu2 + 2,
+                          mean = mu2, sd = 1)
+    }
+
+    # generate the factor scores
     eta_i <- sim_VAR(factors = 2, obs = obs,
                      phi = phimat_i, zeta = zetamat_i,
                      mu = c(mu1_i, mu2_i),
@@ -108,57 +123,33 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
   lambda <- matrix(c(loadings, rep(0, 4), rep(0, 4), loadings),
                    nrow = 8, ncol = 2)
   
-  ## get error variances
-  # since the total factor variance (psi) differs between conditions (low or large regression
-  # parameters), we need to obtain the population psi and then obtain error 
-  # variances that lead to a certain rho value
-  # get population psi (factor variance)
-  psimat <- solve(diag(2*2) - kronecker(phimat, phimat)) %*% c(zetamat) |> matrix(nrow = 2)
-  
-  # write an objective function that gives the difference between the computed rho
-  # (based on the error variances) and desired rho
-  rho_difference <- function(errorvars, psi, lambda, target_rho) {
-    theta <- matrix(0, nrow = 8, ncol = 8)                                      # error variance matrix with 0 on off-diagonal
-    diag(theta) <- errorvars                                                    # add error variances to the diagonal of theta
-    computed_rho <- diag(psi %*% t(lambda) %*% solve(lambda %*% psi %*% t(lambda) + theta) %*% lambda)
-    diff_rho <- sum((computed_rho - target_rho)^2)                              # squared difference between computed and desired rho as the objective
-    return(diff_rho)
-  }
-  
-  # initial values for error variances
-  initial_errorvars <- rep(0.5, 8)
-  
-  # target values for rho
-  if(rho_gen == "small"){
-    target_rho <- c(0.5, 0.5)
-  }
-  if(rho_gen == "medium"){
-    target_rho <- c(0.7, 0.7)
-  }
-  if(rho_gen == "large"){
-    target_rho <- c(0.9, 0.9)
-  }
-  if(rho_gen == "very large"){
-    target_rho <- c(0.99, 0.99)
-  }
-  
-  
-  # run optimization
-  result <- optim(
-    par = initial_errorvars,
-    fn = rho_difference,
-    psi = psimat,  # Provide psi, lambda, and target_rho as additional arguments
-    lambda = lambda,
-    target_rho = target_rho,
-    method = "L-BFGS-B",
-    lower = rep(0.0001, 8)
-    )
-  
-  # retrieve the optimized theta
-  optimized_errorvars <- result$par
-  
+  # set error variances (see script "rhos.R"):
   theta <- matrix(0, nrow = 8, ncol = 8)                                        # create error covariance matrix
-  diag(theta) <- optimized_errorvars                                            # place error variances on theta diagonal
+  if(phi_size == "small" & rho_gen == "small"){
+    errorvars <- 6.15
+  }
+  if(phi_size == "large" & rho_gen == "small"){
+    errorvars <- 8.832
+  }
+  if(phi_size == "small" & rho_gen == "medium"){
+    errorvars <- 2.546
+  }
+  if(phi_size == "large" & rho_gen == "medium"){
+    errorvars <- 3.398
+  }
+  if(phi_size == "small" & rho_gen == "large"){
+    errorvars <- .639
+  }
+  if(phi_size == "large" & rho_gen == "large"){
+    errorvars <- 0.8
+  }
+  if(phi_size == "small" & rho_gen == "very large"){
+    errorvars <- 0.057
+  }
+  if(phi_size == "large" & rho_gen == "very large"){
+    errorvars <- 0.07
+  }
+  diag(theta) <- errorvars                                                      # place error variances on theta diagonal
   
   epsilon <- mvrnorm(nrow(eta), mu = rep(0, 8), Sigma = theta, empirical=T)     # generate errors
   
@@ -175,12 +166,16 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
   
   #### 4) 3S-LVAR ####
   # within-person mean center the indicators to remove between-person differences
-  data_cent <- data#center_within(data, vars = paste0("v", 1:8), id = "id")
+  if(variance_means == "yes"){
+    data_cent <- center_within(data, vars = paste0("v", 1:8), id = "id")
+  } else {
+    data_cent <- data
+  }
+  
   # write measurement model
   model_step1 <- "
     f1 =~ v1 + v2 + v3 + v4
     f2 =~ v5 + v6 + v7 + v8
-    v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 ~ 0*1
     "
   
   ## run step 1
@@ -238,6 +233,10 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     } else {
       # if step 1 was not successful:
       t_step2 <- NA
+      LVAR_step2_warning <- FALSE
+      LVAR_step2_warning_text <- "step1 not successful"
+      LVAR_step2_error <- FALSE
+      LVAR_step2_error_text <- "step1 not successful"
     }
   
   ## run step 3 only if step 1 and step 2 were successful:
@@ -270,53 +269,19 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     SEcorr_step3_warning_text <- "step1 or step2 not successful"
     SEcorr_step3_error <- FALSE
     SEcorr_step3_error_text <- "step1 or step2 not successful"
-    
-    LVAR_phi11 <- NA
-    LVAR_phi12 <- NA
-    LVAR_phi21 <- NA
-    LVAR_phi22 <- NA
-    
-    LVAR_zeta1 <- NA
-    LVAR_zeta2 <- NA
-    LVAR_zeta12 <- NA
-    
-    LVAR_phi11_se <- NA
-    LVAR_phi12_se <- NA
-    LVAR_phi21_se <- NA
-    LVAR_phi22_se <- NA
-    
-    LVAR_zeta1_se <- NA
-    LVAR_zeta2_se <- NA
-    LVAR_zeta12_se <- NA
-    
-    LVAR_phi11_secorr <- NA
-    LVAR_phi12_secorr <- NA
-    LVAR_phi21_secorr <- NA
-    LVAR_phi22_secorr <- NA
-    
-    LVAR_zeta1_secorr <- NA
-    LVAR_zeta2_secorr <- NA
-    LVAR_zeta12_secorr <- NA
-    
-    nickellsbias_phi11 <- NA
-    nickellsbias_phi22 <- NA
   }
   
-  # if step 3 was successful, extract results:
-  if(!LVAR_step3_error){
+  # if all steps were successful, extract results:
+  if(!LVAR_step1_error & !LVAR_step2_error & !LVAR_step3_error){
     output_LVAR_step3 <- LVAR_step3$result$result
     t_step3 <- difftime(Sys.time(), start_step3, unit = "s")                    # save duration of step 3
     
     ## extract results
-    # compute Nickell's bias:
-    nickellsbias_phi11 <- -((1+phimat[1, 1])/(obs-1)) |> as.numeric()
-    nickellsbias_phi22 <- -((1+phimat[2, 2])/(obs-1)) |> as.numeric()
     # regression parameters and innovation variances
     LVAR_parameters <- parTable(output_LVAR_step3$fit)
     LVAR_phi11 <- LVAR_parameters |> 
       dplyr::filter(lhs == "f1", op == "~", rhs == "f1_lag") |> 
       dplyr::select(est) |> as.numeric()
-    #LVAR_phi11 <- (LVAR_phi11* ( obs - 1) + 1)/(obs-2)                          # correct for Nickell's bias
     LVAR_phi12 <- LVAR_parameters |> 
       dplyr::filter(lhs == "f1", op == "~", rhs == "f2_lag") |> 
       dplyr::select(est) |> as.numeric()
@@ -326,8 +291,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     LVAR_phi22 <- LVAR_parameters |> 
       dplyr::filter(lhs == "f2", op == "~", rhs == "f2_lag") |> 
       dplyr::select(est) |> as.numeric()
-    #LVAR_phi22 <- (LVAR_phi22* ( obs - 1) + 1)/(obs-2)                          # correct for Nickell's bias
-    
+
     LVAR_zeta1 <- LVAR_parameters |>
       dplyr::filter(lhs == "f1", op == "~~", rhs == "f1") |> 
       dplyr::select(est) |> as.numeric()
@@ -363,13 +327,15 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
       dplyr::select(se) |> as.numeric()
     
     } else {
-      # if step 3 was not successful, set all results to NA:
+      # if any step was not successful, set all results to NA:
       t_step3 <- NA
       
       LVAR_phi11 <- NA
       LVAR_phi12 <- NA
       LVAR_phi21 <- NA
       LVAR_phi22 <- NA
+      LVAR_phi11corr <- NA
+      LVAR_phi22corr <- NA
       
       LVAR_zeta1 <- NA
       LVAR_zeta2 <- NA
@@ -383,514 +349,500 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
       LVAR_zeta1_se <- NA
       LVAR_zeta2_se <- NA
       LVAR_zeta12_se <- NA
-      
-      nickellsbias_phi11 <- NA
-      nickellsbias_phi22 <- NA
     }
   
-  rho_f1 <- output_LVAR_step2$rho[1] |> as.numeric()
-  rho_f2 <- output_LVAR_step2$rho[2] |> as.numeric()
   
+  # if step3 was successful, also perform the standard error correction
+  if(!LVAR_step1_error & !LVAR_step2_error & !LVAR_step3_error){
+    start_SEcorr <- Sys.time()                                                  # start timer of SE correction
+    SEcorr <- run_SEcorrection(output_LVAR_step2, output_LVAR_step3)
+    # extract error/warning messages (if applicable):
+    SEcorr_warning <- ifelse(is_empty(SEcorr$warnings),
+                             FALSE, TRUE)
+    SEcorr_warning_text <- ifelse(is_empty(SEcorr$warnings),
+                                  "",
+                                  paste(c(SEcorr$warnings),
+                                        collapse = "; ")
+    )
+    SEcorr_error <- ifelse(is_empty(SEcorr$result$error),
+                           FALSE, TRUE)
+    SEcorr_error_text <- ifelse(is_empty(SEcorr$result$error),
+                                "",
+                                paste(c(SEcorr$result$error),
+                                      collapse = "; ")
+    )
+
+    # if correction was successful, extract results
+    if(is_empty(SEcorr$result$error)){
+      output_SEcorr <- SEcorr$result$result
+      t_SEcorr <- difftime(Sys.time(), start_SEcorr, unit = "s")    # save duration of SE correction
+
+      # corrected SEs:
+      LVAR_phi11_secorr <- output_SEcorr$SE["f1~f1_lag"] |>
+        as.numeric()
+      LVAR_phi12_secorr <- output_SEcorr$SE["f1~f2_lag"] |>
+        as.numeric()
+      LVAR_phi21_secorr <- output_SEcorr$SE["f2~f1_lag"] |>
+        as.numeric()
+      LVAR_phi22_secorr <- output_SEcorr$SE["f2~f2_lag"] |>
+        as.numeric()
+
+      LVAR_zeta1_secorr <- output_SEcorr$SE["f1~~f1"] |>
+        as.numeric()
+      LVAR_zeta2_secorr <- output_SEcorr$SE["f2~~f2"] |>
+        as.numeric()
+      LVAR_zeta12_secorr <- output_SEcorr$SE["f1~~f2"] |>
+        as.numeric()
+
+    } else {
+      # if SEcorrection was not successful, set all corrected SEs to NA:
+      t_SEcorr <- NA
+
+      LVAR_phi11_secorr <- NA
+      LVAR_phi12_secorr <- NA
+      LVAR_phi21_secorr <- NA
+      LVAR_phi22_secorr <- NA
+
+      LVAR_zeta1_secorr <- NA
+      LVAR_zeta2_secorr <- NA
+      LVAR_zeta12_secorr <- NA
+    }
+
+
+  } else {
+    # if step3 was not successful, set all corrected SEs to NA:
+    t_SEcorr <- NA
+    SEcorr_step3_warning <- FALSE
+    SEcorr_step3_warning_text <- "step3 not successful"
+    SEcorr_step3_error <- FALSE
+    SEcorr_step3_error_text <- "step3 not successful"
+
+    LVAR_phi11_secorr <- NA
+    LVAR_phi12_secorr <- NA
+    LVAR_phi21_secorr <- NA
+    LVAR_phi22_secorr <- NA
+
+    LVAR_zeta1_secorr <- NA
+    LVAR_zeta2_secorr <- NA
+    LVAR_zeta12_secorr <- NA
+  }
+
+  #### 5) Naive Factor Scores (NFS) ####
+  factorscores <- output_LVAR_step2$data[, c("id", "f1", "f2")]
+  # factorscores have already been computed above (step 1 and 2 of 3S-LVAR)
+  # so we can just reuse that object
+  start_NFS <- Sys.time()                                                       # start timer
+
+  # create additional rows and lagged variables
+  factorscores <- factorscores |>
+    group_by(id) |>
+    do(add_row(.)) |>
+    ungroup() |>
+    fill(id) |>
+    group_by(id) |>
+    mutate(f1lag = dplyr::lag(f1),
+           f2lag = dplyr::lag(f2)) |>
+    ungroup()
+
+
+  model_NFS <- "
+  f1 ~ phi_f1_f1_lag*f1lag + phi_f1_f2_lag*f2lag
+  f2 ~ phi_f2_f1_lag*f1lag + phi_f2_f2_lag*f2lag
+  f1 ~~ zeta_f1_f1*f1
+  f2 ~~ zeta_f2_f2*f2
+  f1 ~~ zeta_f1_f2*f2
+  "
+  NFS <- run_SEM(model_NFS, data = factorscores,
+                 missing = "ML",
+                 cluster = "id")
+  # extract error/warning messages (if applicable):
+  NFS_warning <- ifelse(is_empty(NFS$warnings),
+                        FALSE, TRUE)
+  NFS_warning_text <- ifelse(is_empty(NFS$warnings),
+                             "",
+                             paste(c(NFS$warnings),
+                                   collapse = "; ")
+  )
+  NFS_error <- ifelse(is_empty(NFS$result$error),
+                      FALSE, TRUE)
+  NFS_error_text <- ifelse(is_empty(NFS$result$error),
+                           "",
+                           paste(c(NFS$result$error),
+                                 collapse = "; ")
+  )
+  # if no error during NFS estimation, get results
+  if(is_empty(NFS$result$error)){
+    output_NFS <- NFS$result$result
+    t_NFS <- difftime(Sys.time(), start_NFS, unit = "s")                        # save duration of NFS
+
+    ## extract results:
+    # regression parameters and innovation variances
+    NFS_parameters <- parTable(output_NFS)
+    NFS_phi11 <- NFS_parameters |>
+      dplyr::filter(label == "phi_f1_f1_lag") |>
+      dplyr::select(est) |> as.numeric()
+    NFS_phi12 <- NFS_parameters |>
+      dplyr::filter(label == "phi_f1_f2_lag") |>
+      dplyr::select(est) |> as.numeric()
+    NFS_phi21 <- NFS_parameters |>
+      dplyr::filter(label == "phi_f2_f1_lag") |>
+      dplyr::select(est) |> as.numeric()
+    NFS_phi22 <- NFS_parameters |>
+      dplyr::filter(label == "phi_f2_f2_lag") |>
+      dplyr::select(est) |> as.numeric()
+
+    NFS_zeta1 <- NFS_parameters |>
+      dplyr::filter(label == "zeta_f1_f1") |>
+      dplyr::select(est) |> as.numeric()
+    NFS_zeta2 <- NFS_parameters |>
+      dplyr::filter(label == "zeta_f2_f2") |>
+      dplyr::select(est) |> as.numeric()
+    NFS_zeta12 <- NFS_parameters |>
+      dplyr::filter(label == "zeta_f1_f2") |>
+      dplyr::select(est) |> as.numeric()
+
+    # standard errors
+    NFS_phi11_se <- NFS_parameters |>
+      dplyr::filter(label == "phi_f1_f1_lag") |>
+      dplyr::select(se) |> as.numeric()
+    NFS_phi12_se <- NFS_parameters |>
+      dplyr::filter(label == "phi_f1_f2_lag") |>
+      dplyr::select(se) |> as.numeric()
+    NFS_phi21_se <- NFS_parameters |>
+      dplyr::filter(label == "phi_f2_f1_lag") |>
+      dplyr::select(se) |> as.numeric()
+    NFS_phi22_se <- NFS_parameters |>
+      dplyr::filter(label == "phi_f2_f2_lag") |>
+      dplyr::select(se) |> as.numeric()
+
+    NFS_zeta1_se <- NFS_parameters |>
+      dplyr::filter(label == "zeta_f1_f1") |>
+      dplyr::select(se) |> as.numeric()
+    NFS_zeta2_se <- NFS_parameters |>
+      dplyr::filter(label == "zeta_f2_f2") |>
+      dplyr::select(se) |> as.numeric()
+    NFS_zeta12_se <- NFS_parameters |>
+      dplyr::filter(label == "zeta_f1_f2") |>
+      dplyr::select(se) |> as.numeric()
+  } else {
+    # if NFS was not successful, set all results to NA
+    t_NFS <- NA
+
+    NFS_phi11 <- NA
+    NFS_phi12 <- NA
+    NFS_phi21 <- NA
+    NFS_phi22 <- NA
+
+    NFS_zeta1 <- NA
+    NFS_zeta2 <- NA
+    NFS_zeta12 <- NA
+
+    NFS_phi11_se <- NA
+    NFS_phi12_se <- NA
+    NFS_phi21_se <- NA
+    NFS_phi22_se <- NA
+
+    NFS_zeta1_se <- NA
+    NFS_zeta2_se <- NA
+    NFS_zeta12_se <- NA
+  }
+
+
+
+  #### 6) SAM ####
+  start_SAM <- Sys.time()                                                       # start timer for SAM
+
+  data_SEM <- data_cent |>
+    group_by(id) |>
+    do(add_row(.)) |>
+    ungroup() |>
+    fill(id) |>
+    group_by(id) |>
+    mutate(v1lag = dplyr::lag(v1),
+           v2lag = dplyr::lag(v2),
+           v3lag = dplyr::lag(v3),
+           v4lag = dplyr::lag(v4),
+           v5lag = dplyr::lag(v5),
+           v6lag = dplyr::lag(v6),
+           v7lag = dplyr::lag(v7),
+           v8lag = dplyr::lag(v8)) |>
+    ungroup()
+
+
+  model_SEM <- "
+  f1lag =~ v1lag + v2lag + v3lag + v4lag
+  f2lag =~ v5lag + v6lag + v7lag + v8lag
+  f1 =~ v1 + v2 + v3 + v4
+  f2 =~ v5 + v6 + v7 + v8
+
+  f1 ~ phi_f1_f1_lag*f1lag + phi_f1_f2_lag*f2lag
+  f2 ~ phi_f2_f1_lag*f1lag + phi_f2_f2_lag*f2lag
+  f1 ~~ zeta_f1_f1*f1
+  f2 ~~ zeta_f2_f2*f2
+  f1 ~~ zeta_f1_f2*f2
+  "
+
+  SAM <- run_SAM(model_SEM, data = data_SEM, missing = "ML",
+                 mm.args = list(bounds = "none"),
+                 sam.method = "local")
+  # extract error/warning messages (if applicable):
+  SAM_warning <- ifelse(is_empty(SAM$warnings),
+                        FALSE, TRUE)
+  SAM_warning_text <- ifelse(is_empty(SAM$warnings),
+                             "",
+                             paste(c(SAM$warnings),
+                                   collapse = "; ")
+  )
+  SAM_error <- ifelse(is_empty(SAM$result$error),
+                      FALSE, TRUE)
+  SAM_error_text <- ifelse(is_empty(SAM$result$error),
+                           "",
+                           paste(c(SAM$result$error),
+                                 collapse = "; ")
+  )
+
+  # if SAM was succesful, extract results:
+  if(is_empty(SAM$result$error)){
+    # save duration of SAM:
+    output_SAM <- SAM$result$result
+    t_SAM <- difftime(Sys.time(), start_SAM, unit = "s")                        # save duration for SAM
+
+    ## extract results:
+    # regression parameters and innovation variances
+    SAM_parameters <- parTable(output_SAM)
+    SAM_phi11 <- SAM_parameters |>
+      dplyr::filter(label == "phi_f1_f1_lag") |>
+      dplyr::select(est) |> as.numeric()
+    SAM_phi12 <- SAM_parameters |>
+      dplyr::filter(label == "phi_f1_f2_lag") |>
+      dplyr::select(est) |> as.numeric()
+    SAM_phi21 <- SAM_parameters |>
+      dplyr::filter(label == "phi_f2_f1_lag") |>
+      dplyr::select(est) |> as.numeric()
+    SAM_phi22 <- SAM_parameters |>
+      dplyr::filter(label == "phi_f2_f2_lag") |>
+      dplyr::select(est) |> as.numeric()
+
+    SAM_zeta1 <- SAM_parameters |>
+      dplyr::filter(label == "zeta_f1_f1") |>
+      dplyr::select(est) |> as.numeric()
+    SAM_zeta2 <- SAM_parameters |>
+      dplyr::filter(label == "zeta_f2_f2") |>
+      dplyr::select(est) |> as.numeric()
+    SAM_zeta12 <- SAM_parameters |>
+      dplyr::filter(label == "zeta_f1_f2") |>
+      dplyr::select(est) |> as.numeric()
+
+    # standard errors
+    SAM_phi11_se <- SAM_parameters |>
+      dplyr::filter(label == "phi_f1_f1_lag") |>
+      dplyr::select(se) |> as.numeric()
+    SAM_phi12_se <- SAM_parameters |>
+      dplyr::filter(label == "phi_f1_f2_lag") |>
+      dplyr::select(se) |> as.numeric()
+    SAM_phi21_se <- SAM_parameters |>
+      dplyr::filter(label == "phi_f2_f1_lag") |>
+      dplyr::select(se) |> as.numeric()
+    SAM_phi22_se <- SAM_parameters |>
+      dplyr::filter(label == "phi_f2_f2_lag") |>
+      dplyr::select(se) |> as.numeric()
+
+    SAM_zeta1_se <- SAM_parameters |>
+      dplyr::filter(label == "zeta_f1_f1") |>
+      dplyr::select(se) |> as.numeric()
+    SAM_zeta2_se <- SAM_parameters |>
+      dplyr::filter(label == "zeta_f2_f2") |>
+      dplyr::select(se) |> as.numeric()
+    SAM_zeta12_se <- SAM_parameters |>
+      dplyr::filter(label == "zeta_f1_f2") |>
+      dplyr::select(se) |> as.numeric()
+  } else{
+    # if SAM was not succesful, set results to NA
+    t_SAM <- NA
+
+    SAM_phi11 <- NA
+    SAM_phi12 <- NA
+    SAM_phi21 <- NA
+    SAM_phi22 <- NA
+
+    SAM_zeta1 <- NA
+    SAM_zeta2 <- NA
+    SAM_zeta12 <- NA
+
+    SAM_phi11_se <- NA
+    SAM_phi12_se <- NA
+    SAM_phi21_se <- NA
+    SAM_phi22_se <- NA
+
+    SAM_zeta1_se <- NA
+    SAM_zeta2_se <- NA
+    SAM_zeta12_se <- NA
+  }
+
+  #### 7) SEM ####
+  start_SEM <- Sys.time()                                                       # start timer for SEM
+
+  SEM <- run_SEM(model_SEM,
+                 data = data_SEM,
+                 missing = "ML",
+                 cluster = "id")
+  # extract error/warning messages (if applicable):
+  SEM_warning <- ifelse(is_empty(SEM$warnings),
+                        FALSE, TRUE)
+  SEM_warning_text <- ifelse(is_empty(SEM$warnings),
+                             "",
+                             paste(c(SEM$warnings),
+                                   collapse = "; ")
+  )
+  SEM_error <- ifelse(is_empty(SEM$result$error),
+                      FALSE, TRUE)
+  SEM_error_text <- ifelse(is_empty(SEM$result$error),
+                           "",
+                           paste(c(SEM$result$error),
+                                 collapse = "; ")
+  )
+
+  # if SEM was succesful, extract results:
+  if(is_empty(SEM$result$error)){
+    t_SEM <- difftime(Sys.time(), start_SEM, unit = "s")                        # save duration of SEM
+    output_SEM <- SEM$result$result
+
+    ## extract results:
+    # regression parameters and innovation variances
+    SEM_parameters <- parTable(output_SEM)
+    SEM_phi11 <- SEM_parameters |>
+      dplyr::filter(label == "phi_f1_f1_lag") |>
+      dplyr::select(est) |> as.numeric()
+    SEM_phi12 <- SEM_parameters |>
+      dplyr::filter(label == "phi_f1_f2_lag") |>
+      dplyr::select(est) |> as.numeric()
+    SEM_phi21 <- SEM_parameters |>
+      dplyr::filter(label == "phi_f2_f1_lag") |>
+      dplyr::select(est) |> as.numeric()
+    SEM_phi22 <- SEM_parameters |>
+      dplyr::filter(label == "phi_f2_f2_lag") |>
+      dplyr::select(est) |> as.numeric()
+
+    SEM_zeta1 <- SEM_parameters |>
+      dplyr::filter(label == "zeta_f1_f1") |>
+      dplyr::select(est) |> as.numeric()
+    SEM_zeta2 <- SEM_parameters |>
+      dplyr::filter(label == "zeta_f2_f2") |>
+      dplyr::select(est) |> as.numeric()
+    SEM_zeta12 <- SEM_parameters |>
+      dplyr::filter(label == "zeta_f1_f2") |>
+      dplyr::select(est) |> as.numeric()
+
+    # standard errors
+    SEM_phi11_se <- SEM_parameters |>
+      dplyr::filter(label == "phi_f1_f1_lag") |>
+      dplyr::select(se) |> as.numeric()
+    SEM_phi12_se <- SEM_parameters |>
+      dplyr::filter(label == "phi_f1_f2_lag") |>
+      dplyr::select(se) |> as.numeric()
+    SEM_phi21_se <- SEM_parameters |>
+      dplyr::filter(label == "phi_f2_f1_lag") |>
+      dplyr::select(se) |> as.numeric()
+    SEM_phi22_se <- SEM_parameters |>
+      dplyr::filter(label == "phi_f2_f2_lag") |>
+      dplyr::select(se) |> as.numeric()
+
+    SEM_zeta1_se <- SEM_parameters |>
+      dplyr::filter(label == "zeta_f1_f1") |>
+      dplyr::select(se) |> as.numeric()
+    SEM_zeta2_se <- SEM_parameters |>
+      dplyr::filter(label == "zeta_f2_f2") |>
+      dplyr::select(se) |> as.numeric()
+    SEM_zeta12_se <- SEM_parameters |>
+      dplyr::filter(label == "zeta_f1_f2") |>
+      dplyr::select(se) |> as.numeric()
+  } else{
+    # if SEM was not succesful, set results to NA
+    t_SEM <- NA
+
+    SEM_phi11 <- NA
+    SEM_phi12 <- NA
+    SEM_phi21 <- NA
+    SEM_phi22 <- NA
+
+    SEM_zeta1 <- NA
+    SEM_zeta2 <- NA
+    SEM_zeta12 <- NA
+
+    SEM_phi11_se <- NA
+    SEM_phi12_se <- NA
+    SEM_phi21_se <- NA
+    SEM_phi22_se <- NA
+
+    SEM_zeta1_se <- NA
+    SEM_zeta2_se <- NA
+    SEM_zeta12_se <- NA
+  }
+
+
+  # compile output:
   output <- c("iteration" = iteration, "replication" = replication,
-              "phi_size" = phi_size, "n" = n, "obs" = obs, "rho_gen" = rho_gen, "meanvar" = meanvar,
-              "t_datagen" = t_datagen, "t_step1" = t_step1, "t_step2" = t_step2, "t_step3" = t_step3,
+              "phi_size" = phi_size, "n" = n, "obs" = obs, "rho_gen" = rho_gen,
+              "variance_means" = variance_means, "variance_zeta" = variance_zeta,
+              "variance_phi" = variance_phi,
+              "t_datagen" = t_datagen, "t_step1" = t_step1, "t_step2" = t_step2, 
+              "t_step3" = t_step3, "t_SEcorr" = t_SEcorr,
+              "t_NFS" = t_NFS, "t_SAM" = t_SAM, "t_SEM" = t_SEM,
               "phi11_pop" = phi11_pop, "phi12_pop" = phi12_pop, "phi21_pop" = phi21_pop, "phi22_pop" = phi22_pop,
               "zeta1_pop" = zeta1_pop, "zeta2_pop" = zeta2_pop, "zeta12_pop" = zeta12_pop,
-              "rho_f1" = rho_f1, "rho_f2" = rho_f2,
-              "nickellsbias_phi11" = nickellsbias_phi11, "nickellsbias_phi22" = nickellsbias_phi22,
               "LVAR_phi11" = LVAR_phi11, "LVAR_phi12" = LVAR_phi12,
               "LVAR_phi21" = LVAR_phi21, "LVAR_phi22" = LVAR_phi22,
               "LVAR_zeta1" = LVAR_zeta1, "LVAR_zeta2" = LVAR_zeta2, "LVAR_zeta12" = LVAR_zeta12,
               "LVAR_phi11_se" = LVAR_phi11_se, "LVAR_phi12_se" = LVAR_phi12_se,
               "LVAR_phi21_se" = LVAR_phi21_se, "LVAR_phi22_se" = LVAR_phi22_se,
               "LVAR_zeta1_se" = LVAR_zeta1_se, "LVAR_zeta2_se" = LVAR_zeta2_se, "LVAR_zeta12_se" = LVAR_zeta12_se,
-              "LVAR_step1_warning" = LVAR_step1_warning, "LVAR_step2_warning" = LVAR_step2_warning, "LVAR_step3_warning" = LVAR_step3_warning,
-              "LVAR_step1_error" = LVAR_step1_error, "LVAR_step2_error" = LVAR_step2_error, "LVAR_step3_error" = LVAR_step3_error,
+              "LVAR_phi11_secorr" = LVAR_phi11_secorr, "LVAR_phi12_secorr" = LVAR_phi12_secorr,
+              "LVAR_phi21_secorr" = LVAR_phi21_secorr, "LVAR_phi22_secorr" = LVAR_phi22_secorr,
+              "LVAR_zeta1_secorr" = LVAR_zeta1_secorr, "LVAR_zeta2_secorr" = LVAR_zeta2_secorr, "LVAR_zeta12_secorr" = LVAR_zeta12_secorr,
+              "NFS_phi11" = NFS_phi11, "NFS_phi12" = NFS_phi12,
+              "NFS_phi21" = NFS_phi21, "NFS_phi22" = NFS_phi22,
+              "NFS_zeta1" = NFS_zeta1, "NFS_zeta2" = NFS_zeta2, "NFS_zeta12" = NFS_zeta12,
+              "NFS_phi11_se" = NFS_phi11_se, "NFS_phi12_se" = NFS_phi12_se,
+              "NFS_phi21_se" = NFS_phi21_se, "NFS_phi22_se" = NFS_phi22_se,
+              "NFS_zeta1_se" = NFS_zeta1_se, "NFS_zeta2_se" = NFS_zeta2_se, "NFS_zeta12_se" = NFS_zeta12_se,
+              "SAM_phi11" = SAM_phi11, "SAM_phi12" = SAM_phi12,
+              "SAM_phi21" = SAM_phi21, "SAM_phi22" = SAM_phi22,
+              "SAM_zeta1" = SAM_zeta1, "SAM_zeta2" = SAM_zeta2, "SAM_zeta12" = SAM_zeta12,
+              "SAM_phi11_se" = SAM_phi11_se, "SAM_phi12_se" = SAM_phi12_se,
+              "SAM_phi21_se" = SAM_phi21_se, "SAM_phi22_se" = SAM_phi22_se,
+              "SAM_zeta1_se" = SAM_zeta1_se, "SAM_zeta2_se" = SAM_zeta2_se, "SAM_zeta12_se" = SAM_zeta12_se,
+              "SEM_phi11" = SEM_phi11, "SEM_phi12" = SEM_phi12,
+              "SEM_phi21" = SEM_phi21, "SEM_phi22" = SEM_phi22,
+              "SEM_zeta1" = SEM_zeta1, "SEM_zeta2" = SEM_zeta2, "SEM_zeta12" = SEM_zeta12,
+              "SEM_phi11_se" = SEM_phi11_se, "SEM_phi12_se" = SEM_phi12_se,
+              "SEM_phi21_se" = SEM_phi21_se, "SEM_phi22_se" = SEM_phi22_se,
+              "SEM_zeta1_se" = SEM_zeta1_se, "SEM_zeta2_se" = SEM_zeta2_se, "SEM_zeta12_se" = SEM_zeta12_se,
+              "LVAR_step1_warning" = LVAR_step1_warning, "LVAR_step2_warning" = LVAR_step2_warning,
+              "LVAR_step3_warning" = LVAR_step3_warning, "SEcorr_warning" = SEcorr_warning, 
+              "NFS_warning" = NFS_warning, "SAM_warning" = SAM_warning, "SEM_warning" = SEM_warning,
+              "LVAR_step1_error" = LVAR_step1_error, "LVAR_step2_error" = LVAR_step2_error,
+              "LVAR_step3_error" = LVAR_step3_error, "SEcorr_error" = SEcorr_error, 
+              "NFS_error" = NFS_error, "SAM_error" = SAM_error, "SEM_error" = SEM_error,
               "seed" = seed_cond, "pos" = pos,
-              "LVAR_step1_warning_text" = LVAR_step1_warning_text, "LVAR_step2_warning_text" = LVAR_step2_warning_text, "LVAR_step3_warning_text" = LVAR_step3_warning_text,
-              "LVAR_step1_error_text" = LVAR_step1_error_text, "LVAR_step2_error_text" = LVAR_step2_error_text, "LVAR_step3_error_text" = LVAR_step3_error_text)
-  
-  for(i in 45:50){
+              "LVAR_step1_warning_text" = LVAR_step1_warning_text, 
+              "LVAR_step2_warning_text" = LVAR_step2_warning_text,
+              "LVAR_step3_warning_text" = LVAR_step3_warning_text,
+              "SEcorr_warning_text" = SEcorr_warning_text, 
+              "NFS_warning_text" = NFS_warning_text, 
+              "SAM_warning_text" = SAM_warning_text, 
+              "SEM_warning_text" = SEM_warning_text,
+              "LVAR_step1_error_text" = LVAR_step1_error_text, 
+              "LVAR_step2_error_text" = LVAR_step2_error_text, 
+              "LVAR_step3_error_text" = LVAR_step3_error_text,
+              "SEcorr_error_text" = SEcorr_error_text, 
+              "NFS_error_text" = NFS_error_text, 
+              "SAM_error_text" = SAM_error_text, 
+              "SEM_error_text" = SEM_error_text)
+
+  for(i in 104:117){
     output[i] <- str_squish(output[i])                                          # removes all whitespace and linebreaks from the error and warning strings
     output[i] <- gsub(",", "", output[i])                                       # removes all commata from error and warning strings (to prevent messing up the CSV file)
   }
-  
-  # # if step3 was successful, also perform the standard error correction
-  # if(!LVAR_step3_error){
-  #   start_SEcorr <- Sys.time()                                                  # start timer of SE correction
-  #   SEcorr <- run_SEcorrection(output_LVAR_step1step2, output_LVAR_step3)
-  #   # extract error/warning messages (if applicable):
-  #   SEcorr_warning <- ifelse(is_empty(SEcorr$warnings),
-  #                            FALSE, TRUE)
-  #   SEcorr_warning_text <- ifelse(is_empty(SEcorr$warnings),
-  #                                 "",
-  #                                 paste(c(SEcorr$warnings),
-  #                                       collapse = "; ")
-  #   )
-  #   SEcorr_error <- ifelse(is_empty(SEcorr$result$error),
-  #                          FALSE, TRUE)
-  #   SEcorr_error_text <- ifelse(is_empty(SEcorr$result$error),
-  #                               "",
-  #                               paste(c(SEcorr$result$error),
-  #                                     collapse = "; ")
-  #   )
-  #   
-  #   # if correction was successful, extract results
-  #   if(is_empty(SEcorr$result$error)){
-  #     output_SEcorr <- SEcorr$result$result
-  #     t_SEcorr <- difftime(Sys.time(), start_SEcorr, unit = "s")    # save duration of SE correction
-  #     
-  #     # corrected SEs:
-  #     LVAR_phi11_secorr <- output_SEcorr["phi_f1_f1_lag"] |>
-  #       as.numeric()
-  #     LVAR_phi12_secorr <- output_SEcorr["phi_f1_f2_lag"] |>
-  #       as.numeric()
-  #     LVAR_phi21_secorr <- output_SEcorr["phi_f2_f1_lag"] |>
-  #       as.numeric()
-  #     LVAR_phi22_secorr <- output_SEcorr["phi_f2_f2_lag"] |>
-  #       as.numeric()
-  #     
-  #     LVAR_zeta1_secorr <- output_SEcorr["zeta_f1_f1"] |>
-  #       as.numeric()
-  #     LVAR_zeta2_secorr <- output_SEcorr["zeta_f2_f2"] |>
-  #       as.numeric()
-  #     LVAR_zeta12_secorr <- output_SEcorr["zeta_f1_f2"] |>
-  #       as.numeric()
-  #     
-  #   } else {
-  #     # if SEcorrection was not successful, set all corrected SEs to NA:
-  #     t_SEcorr <- NA
-  #     
-  #     LVAR_phi11_secorr <- NA
-  #     LVAR_phi12_secorr <- NA
-  #     LVAR_phi21_secorr <- NA
-  #     LVAR_phi22_secorr <- NA
-  #     
-  #     LVAR_zeta1_secorr <- NA
-  #     LVAR_zeta2_secorr <- NA
-  #     LVAR_zeta12_secorr <- NA
-  #   }
-  #   
-  #   
-  # } else {
-  #   # if step3 was not successful, set all corrected SEs to NA:
-  #   t_SEcorr <- NA
-  #   SEcorr_step3_warning <- FALSE
-  #   SEcorr_step3_warning_text <- "step3 not successful"
-  #   SEcorr_step3_error <- FALSE
-  #   SEcorr_step3_error_text <- "step3 not successful"
-  #   
-  #   LVAR_phi11_secorr <- NA
-  #   LVAR_phi12_secorr <- NA
-  #   LVAR_phi21_secorr <- NA
-  #   LVAR_phi22_secorr <- NA
-  #   
-  #   LVAR_zeta1_secorr <- NA
-  #   LVAR_zeta2_secorr <- NA
-  #   LVAR_zeta12_secorr <- NA
-  # }
-  # 
-  # #### 5) Naive Factor Scores (NFS) ####
-  # factorscores <- output_LVAR_step1step2$data[, c("id", "f1", "f2")]
-  # # factorscores have already been computed above (step 1 and 2 of 3S-LVAR)
-  # # so we can just reuse that object
-  # start_NFS <- Sys.time()                                                       # start timer
-  # 
-  # # create additional rows and lagged variables
-  # factorscores <- factorscores |> 
-  #   group_by(id) |> 
-  #   do(add_row(.)) |> 
-  #   ungroup() |> 
-  #   fill(id) |> 
-  #   group_by(id) |> 
-  #   mutate(f1lag = dplyr::lag(f1),
-  #          f2lag = dplyr::lag(f2)) |> 
-  #   ungroup()
-  # 
-  # 
-  # model_NFS <- "
-  # f1 ~ phi_f1_f1_lag*f1lag + phi_f1_f2_lag*f2lag
-  # f2 ~ phi_f2_f1_lag*f1lag + phi_f2_f2_lag*f2lag
-  # f1 ~~ zeta_f1_f1*f1
-  # f2 ~~ zeta_f2_f2*f2
-  # f1 ~~ zeta_f1_f2*f2
-  # "
-  # NFS <- run_NFS(model_NFS, data = factorscores,
-  #                missing = "ML",
-  #                cluster = "id")
-  # # extract error/warning messages (if applicable):
-  # NFS_warning <- ifelse(is_empty(NFS$warnings),
-  #                       FALSE, TRUE)
-  # NFS_warning_text <- ifelse(is_empty(NFS$warnings),
-  #                            "",
-  #                            paste(c(NFS$warnings),
-  #                                  collapse = "; ")
-  # )
-  # NFS_error <- ifelse(is_empty(NFS$result$error),
-  #                     FALSE, TRUE)
-  # NFS_error_text <- ifelse(is_empty(NFS$result$error),
-  #                          "",
-  #                          paste(c(NFS$result$error),
-  #                                collapse = "; ")
-  # )
-  # # if no error during NFS estimation, get results
-  # if(is_empty(NFS$result$error)){
-  #   output_NFS <- NFS$result$result
-  #   t_NFS <- difftime(Sys.time(), start_NFS, unit = "s")                        # save duration of NFS
-  #   
-  #   ## extract results:
-  #   # regression parameters and innovation variances
-  #   NFS_parameters <- parTable(output_NFS)
-  #   NFS_phi11 <- NFS_parameters |> 
-  #     filter(label == "phi_f1_f1_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   NFS_phi12 <- NFS_parameters |> 
-  #     filter(label == "phi_f1_f2_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   NFS_phi21 <- NFS_parameters |> 
-  #     filter(label == "phi_f2_f1_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   NFS_phi22 <- NFS_parameters |> 
-  #     filter(label == "phi_f2_f2_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   
-  #   NFS_zeta1 <- NFS_parameters |>
-  #     filter(label == "zeta_f1_f1") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   NFS_zeta2 <- NFS_parameters |>
-  #     filter(label == "zeta_f2_f2") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   NFS_zeta12 <- NFS_parameters |>
-  #     filter(label == "zeta_f1_f2") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   
-  #   # standard errors
-  #   NFS_phi11_se <- NFS_parameters |> 
-  #     filter(label == "phi_f1_f1_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   NFS_phi12_se <- NFS_parameters |> 
-  #     filter(label == "phi_f1_f2_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   NFS_phi21_se <- NFS_parameters |> 
-  #     filter(label == "phi_f2_f1_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   NFS_phi22_se <- NFS_parameters |> 
-  #     filter(label == "phi_f2_f2_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   
-  #   NFS_zeta1_se <- NFS_parameters |>
-  #     filter(label == "zeta_f1_f1") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   NFS_zeta2_se <- NFS_parameters |>
-  #     filter(label == "zeta_f2_f2") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   NFS_zeta12_se <- NFS_parameters |>
-  #     filter(label == "zeta_f1_f2") |> 
-  #     dplyr::select(se) |> as.numeric()
-  # } else {
-  #   # if NFS was not successful, set all results to NA
-  #   t_NFS <- NA
-  #   
-  #   NFS_phi11 <- NA
-  #   NFS_phi12 <- NA
-  #   NFS_phi21 <- NA
-  #   NFS_phi22 <- NA
-  #   
-  #   NFS_zeta1 <- NA
-  #   NFS_zeta2 <- NA
-  #   NFS_zeta12 <- NA
-  #   
-  #   NFS_phi11_se <- NA
-  #   NFS_phi12_se <- NA
-  #   NFS_phi21_se <- NA
-  #   NFS_phi22_se <- NA
-  #   
-  #   NFS_zeta1_se <- NA
-  #   NFS_zeta2_se <- NA
-  #   NFS_zeta12_se <- NA
-  # }
-  # 
-  # 
-  # 
-  # #### 6) SAM ####
-  # start_SAM <- Sys.time()                                                       # start timer for SAM
-  # 
-  # data_SEM <- data |> 
-  #   group_by(id) |> 
-  #   do(add_row(.)) |> 
-  #   ungroup() |> 
-  #   fill(id) |> 
-  #   group_by(id) |> 
-  #   mutate(v1lag = dplyr::lag(v1),
-  #          v2lag = dplyr::lag(v2),
-  #          v3lag = dplyr::lag(v3),
-  #          v4lag = dplyr::lag(v4),
-  #          v5lag = dplyr::lag(v5),
-  #          v6lag = dplyr::lag(v6),
-  #          v7lag = dplyr::lag(v7),
-  #          v8lag = dplyr::lag(v8)) |> 
-  #   ungroup()
-  # 
-  # 
-  # model_SEM <- "
-  # f1lag =~ v1lag + v2lag + v3lag + v4lag
-  # f2lag =~ v5lag + v6lag + v7lag + v8lag
-  # f1 =~ v1 + v2 + v3 + v4
-  # f2 =~ v5 + v6 + v7 + v8
-  # 
-  # f1 ~ phi_f1_f1_lag*f1lag + phi_f1_f2_lag*f2lag
-  # f2 ~ phi_f2_f1_lag*f1lag + phi_f2_f2_lag*f2lag
-  # f1 ~~ zeta_f1_f1*f1
-  # f2 ~~ zeta_f2_f2*f2
-  # f1 ~~ zeta_f1_f2*f2
-  # "
-  # 
-  # SAM <- run_SAM(model_SEM, data = data_SEM, missing = "ML",
-  #                mm.args = list(bounds = "none"),
-  #                sam.method = "local")
-  # # extract error/warning messages (if applicable):
-  # SAM_warning <- ifelse(is_empty(SAM$warnings),
-  #                       FALSE, TRUE)
-  # SAM_warning_text <- ifelse(is_empty(SAM$warnings),
-  #                            "",
-  #                            paste(c(SAM$warnings),
-  #                                  collapse = "; ")
-  # )
-  # SAM_error <- ifelse(is_empty(SAM$result$error),
-  #                     FALSE, TRUE)
-  # SAM_error_text <- ifelse(is_empty(SAM$result$error),
-  #                          "",
-  #                          paste(c(SAM$result$error),
-  #                                collapse = "; ")
-  # )
-  # 
-  # # if SAM was succesful, extract results:
-  # if(is_empty(SAM$result$error)){
-  #   # save duration of SAM:
-  #   output_SAM <- SAM$result$result
-  #   t_SAM <- difftime(Sys.time(), start_SAM, unit = "s")                        # save duration for SAM
-  #   
-  #   ## extract results:
-  #   # regression parameters and innovation variances
-  #   SAM_parameters <- parTable(output_SAM)
-  #   SAM_phi11 <- SAM_parameters |> 
-  #     filter(label == "phi_f1_f1_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SAM_phi12 <- SAM_parameters |> 
-  #     filter(label == "phi_f1_f2_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SAM_phi21 <- SAM_parameters |> 
-  #     filter(label == "phi_f2_f1_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SAM_phi22 <- SAM_parameters |> 
-  #     filter(label == "phi_f2_f2_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   
-  #   SAM_zeta1 <- SAM_parameters |>
-  #     filter(label == "zeta_f1_f1") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SAM_zeta2 <- SAM_parameters |>
-  #     filter(label == "zeta_f2_f2") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SAM_zeta12 <- SAM_parameters |>
-  #     filter(label == "zeta_f1_f2") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   
-  #   # standard errors
-  #   SAM_phi11_se <- SAM_parameters |> 
-  #     filter(label == "phi_f1_f1_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SAM_phi12_se <- SAM_parameters |> 
-  #     filter(label == "phi_f1_f2_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SAM_phi21_se <- SAM_parameters |> 
-  #     filter(label == "phi_f2_f1_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SAM_phi22_se <- SAM_parameters |> 
-  #     filter(label == "phi_f2_f2_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   
-  #   SAM_zeta1_se <- SAM_parameters |>
-  #     filter(label == "zeta_f1_f1") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SAM_zeta2_se <- SAM_parameters |>
-  #     filter(label == "zeta_f2_f2") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SAM_zeta12_se <- SAM_parameters |>
-  #     filter(label == "zeta_f1_f2") |> 
-  #     dplyr::select(se) |> as.numeric()
-  # } else{
-  #   # if SAM was not succesful, set results to NA
-  #   t_SAM <- NA
-  #   
-  #   SAM_phi11 <- NA
-  #   SAM_phi12 <- NA
-  #   SAM_phi21 <- NA
-  #   SAM_phi22 <- NA
-  #   
-  #   SAM_zeta1 <- NA
-  #   SAM_zeta2 <- NA
-  #   SAM_zeta12 <- NA
-  #   
-  #   SAM_phi11_se <- NA
-  #   SAM_phi12_se <- NA
-  #   SAM_phi21_se <- NA
-  #   SAM_phi22_se <- NA
-  #   
-  #   SAM_zeta1_se <- NA
-  #   SAM_zeta2_se <- NA
-  #   SAM_zeta12_se <- NA
-  # }
-  # 
-  # #### 7) SEM ####
-  # start_SEM <- Sys.time()                                                       # start timer for SEM
-  # 
-  # SEM <- run_SEM(model_SEM,
-  #                data = data_SEM,
-  #                missing = "ML",
-  #                cluster = "id")
-  # # extract error/warning messages (if applicable):
-  # SEM_warning <- ifelse(is_empty(SEM$warnings),
-  #                       FALSE, TRUE)
-  # SEM_warning_text <- ifelse(is_empty(SEM$warnings),
-  #                            "",
-  #                            paste(c(SEM$warnings),
-  #                                  collapse = "; ")
-  # )
-  # SEM_error <- ifelse(is_empty(SEM$result$error),
-  #                     FALSE, TRUE)
-  # SEM_error_text <- ifelse(is_empty(SEM$result$error),
-  #                          "",
-  #                          paste(c(SEM$result$error),
-  #                                collapse = "; ")
-  # )
-  # 
-  # # if SEM was succesful, extract results:
-  # if(is_empty(SEM$result$error)){
-  #   t_SEM <- difftime(Sys.time(), start_SEM, unit = "s")                        # save duration of SEM
-  #   output_SEM <- SEM$result$result
-  #   
-  #   ## extract results:
-  #   # regression parameters and innovation variances
-  #   SEM_parameters <- parTable(output_SEM)
-  #   SEM_phi11 <- SEM_parameters |> 
-  #     filter(label == "phi_f1_f1_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SEM_phi12 <- SEM_parameters |> 
-  #     filter(label == "phi_f1_f2_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SEM_phi21 <- SEM_parameters |> 
-  #     filter(label == "phi_f2_f1_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SEM_phi22 <- SEM_parameters |> 
-  #     filter(label == "phi_f2_f2_lag") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   
-  #   SEM_zeta1 <- SEM_parameters |>
-  #     filter(label == "zeta_f1_f1") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SEM_zeta2 <- SEM_parameters |>
-  #     filter(label == "zeta_f2_f2") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   SEM_zeta12 <- SEM_parameters |>
-  #     filter(label == "zeta_f1_f2") |> 
-  #     dplyr::select(est) |> as.numeric()
-  #   
-  #   # standard errors
-  #   SEM_phi11_se <- SEM_parameters |> 
-  #     filter(label == "phi_f1_f1_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SEM_phi12_se <- SEM_parameters |> 
-  #     filter(label == "phi_f1_f2_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SEM_phi21_se <- SEM_parameters |> 
-  #     filter(label == "phi_f2_f1_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SEM_phi22_se <- SEM_parameters |> 
-  #     filter(label == "phi_f2_f2_lag") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   
-  #   SEM_zeta1_se <- SEM_parameters |>
-  #     filter(label == "zeta_f1_f1") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SEM_zeta2_se <- SEM_parameters |>
-  #     filter(label == "zeta_f2_f2") |> 
-  #     dplyr::select(se) |> as.numeric()
-  #   SEM_zeta12_se <- SEM_parameters |>
-  #     filter(label == "zeta_f1_f2") |> 
-  #     dplyr::select(se) |> as.numeric()
-  # } else{
-  #   # if SEM was not succesful, set results to NA
-  #   t_SEM <- NA
-  #   
-  #   SEM_phi11 <- NA
-  #   SEM_phi12 <- NA
-  #   SEM_phi21 <- NA
-  #   SEM_phi22 <- NA
-  #   
-  #   SEM_zeta1 <- NA
-  #   SEM_zeta2 <- NA
-  #   SEM_zeta12 <- NA
-  #   
-  #   SEM_phi11_se <- NA
-  #   SEM_phi12_se <- NA
-  #   SEM_phi21_se <- NA
-  #   SEM_phi22_se <- NA
-  #   
-  #   SEM_zeta1_se <- NA
-  #   SEM_zeta2_se <- NA
-  #   SEM_zeta12_se <- NA
-  # }
-  # 
-  # 
-  # # compile output:
-  # output <- c("iteration" = iteration, "replication" = replication,
-  #             "phi_size" = phi_size, "n" = n, "obs" = obs, "rho_gen" = rho_gen,
-  #             "t_datagen" = t_datagen, "t_step1step2" = t_step1step2, "t_step3" = t_step3, "t_SEcorr" = t_SEcorr,
-  #             "t_NFS" = t_NFS, "t_SAM" = t_SAM, "t_SEM" = t_SEM,
-  #             "phi11_pop" = phi11_pop, "phi12_pop" = phi12_pop, "phi21_pop" = phi21_pop, "phi22_pop" = phi22_pop,
-  #             "zeta1_pop" = zeta1_pop, "zeta2_pop" = zeta2_pop, "zeta12_pop" = zeta12_pop,
-  #             "LVAR_phi11" = LVAR_phi11, "LVAR_phi12" = LVAR_phi12,
-  #             "LVAR_phi21" = LVAR_phi21, "LVAR_phi22" = LVAR_phi22,
-  #             "LVAR_zeta1" = LVAR_zeta1, "LVAR_zeta2" = LVAR_zeta2, "LVAR_zeta12" = LVAR_zeta12,
-  #             "LVAR_phi11_se" = LVAR_phi11_se, "LVAR_phi12_se" = LVAR_phi12_se,
-  #             "LVAR_phi21_se" = LVAR_phi21_se, "LVAR_phi22_se" = LVAR_phi22_se,
-  #             "LVAR_zeta1_se" = LVAR_zeta1_se, "LVAR_zeta2_se" = LVAR_zeta2_se, "LVAR_zeta12_se" = LVAR_zeta12_se,
-  #             "LVAR_phi11_secorr" = LVAR_phi11_secorr, "LVAR_phi12_secorr" = LVAR_phi12_secorr,
-  #             "LVAR_phi21_secorr" = LVAR_phi21_secorr, "LVAR_phi22_secorr" = LVAR_phi22_secorr,
-  #             "LVAR_zeta1_secorr" = LVAR_zeta1_secorr, "LVAR_zeta2_secorr" = LVAR_zeta2_secorr, "LVAR_zeta12_secorr" = LVAR_zeta12_secorr,
-  #             "NFS_phi11" = NFS_phi11, "NFS_phi12" = NFS_phi12,
-  #             "NFS_phi21" = NFS_phi21, "NFS_phi22" = NFS_phi22,
-  #             "NFS_zeta1" = NFS_zeta1, "NFS_zeta2" = NFS_zeta2, "NFS_zeta12" = NFS_zeta12,
-  #             "NFS_phi11_se" = NFS_phi11_se, "NFS_phi12_se" = NFS_phi12_se,
-  #             "NFS_phi21_se" = NFS_phi21_se, "NFS_phi22_se" = NFS_phi22_se,
-  #             "NFS_zeta1_se" = NFS_zeta1_se, "NFS_zeta2_se" = NFS_zeta2_se, "NFS_zeta12_se" = NFS_zeta12_se,
-  #             "SAM_phi11" = SAM_phi11, "SAM_phi12" = SAM_phi12,
-  #             "SAM_phi21" = SAM_phi21, "SAM_phi22" = SAM_phi22,
-  #             "SAM_zeta1" = SAM_zeta1, "SAM_zeta2" = SAM_zeta2, "SAM_zeta12" = SAM_zeta12,
-  #             "SAM_phi11_se" = SAM_phi11_se, "SAM_phi12_se" = SAM_phi12_se,
-  #             "SAM_phi21_se" = SAM_phi21_se, "SAM_phi22_se" = SAM_phi22_se,
-  #             "SAM_zeta1_se" = SAM_zeta1_se, "SAM_zeta2_se" = SAM_zeta2_se, "SAM_zeta12_se" = SAM_zeta12_se,
-  #             "SEM_phi11" = SEM_phi11, "SEM_phi12" = SEM_phi12,
-  #             "SEM_phi21" = SEM_phi21, "SEM_phi22" = SEM_phi22,
-  #             "SEM_zeta1" = SEM_zeta1, "SEM_zeta2" = SEM_zeta2, "SEM_zeta12" = SEM_zeta12,
-  #             "SEM_phi11_se" = SEM_phi11_se, "SEM_phi12_se" = SEM_phi12_se,
-  #             "SEM_phi21_se" = SEM_phi21_se, "SEM_phi22_se" = SEM_phi22_se,
-  #             "SEM_zeta1_se" = SEM_zeta1_se, "SEM_zeta2_se" = SEM_zeta2_se, "SEM_zeta12_se" = SEM_zeta12_se,
-  #             "LVAR_step1step2_warning" = LVAR_step1step2_warning, "LVAR_step3_warning" = LVAR_step3_warning,
-  #             "SEcorr_warning" = SEcorr_warning, "NFS_warning" = NFS_warning, "SAM_warning" = SAM_warning, "SEM_warning" = SEM_warning,
-  #             "LVAR_step1step2_error" = LVAR_step1step2_error, "LVAR_step3_error" = LVAR_step3_error,
-  #             "SEcorr_error" = SEcorr_error, "NFS_error" = NFS_error, "SAM_error" = SAM_error, "SEM_error" = SEM_error,
-  #             "seed" = seed_cond, "pos" = pos,
-  #             "LVAR_step1step2_warning_text" = LVAR_step1step2_warning_text, "LVAR_step3_warning_text" = LVAR_step3_warning_text,
-  #             "SEcorr_warning_text" = SEcorr_warning_text, "NFS_warning_text" = NFS_warning_text, "SAM_warning_text" = SAM_warning_text, "SEM_warning_text" = SEM_warning_text,
-  #             "LVAR_step1step2_error_text" = LVAR_step1step2_error_text, "LVAR_step3_error_text" = LVAR_step3_error_text,
-  #             "SEcorr_error_text" = SEcorr_error_text, "NFS_error_text" = NFS_error_text, "SAM_error_text" = SAM_error_text, "SEM_error_text" = SEM_error_text)
-  # 
-  # for(i in 98:109){
-  #   output[i] <- str_squish(output[i])                                          # removes all whitespace and linebreaks from the error and warning strings
-  #   output[i] <- gsub(",", "", output[i])                                       # removes all commata from error and warning strings (to prevent messing up the CSV file)
-  # }
   
   
   # check if file exists

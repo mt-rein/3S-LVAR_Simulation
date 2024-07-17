@@ -1,8 +1,3 @@
-# only for testing!
-# load("examples/outputstep2.RData")
-# step2output <- output
-# structuralmodel = NULL
-
 step3 <- function(step2output, structuralmodel = NULL){
   # step2output:
   #   the object that was generated using the step2() function
@@ -12,11 +7,11 @@ step3 <- function(step2output, structuralmodel = NULL){
   #   will be specified by default.
   
   #### 1) Preparations ####
-  ## required packages:
-  library(dplyr)
-  library(tidyr)
-  library(lavaan)
-  library(RcppAlgos)
+  # ## required packages:
+  # library(dplyr)
+  # library(tidyr)
+  # library(lavaan)
+  # library(RcppAlgos)
   
   ## extract objects from step 1 output:
   data <- step2output$data

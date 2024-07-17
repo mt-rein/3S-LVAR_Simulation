@@ -1,13 +1,9 @@
-# only for testing!
-# load("examples/outputstep1.RData")
-# step1output <- output
-
 step2 <- function(step1output){
   # step1output:
   #   the object that was generated using the step1() function
   
   ## Preparations
-  library(lavaan)
+  #library(lavaan)
   fit_step1 <- step1output$fit_step1
   data <- step1output$data
   
