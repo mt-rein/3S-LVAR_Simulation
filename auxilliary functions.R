@@ -8,12 +8,12 @@ run_SEM <- quietly(safely(sem))
 run_SEcorrection <- quietly(safely(stepwiseSE))
 
 # function to approximate Nickell's bias:
-nickells_bias <- function(phi, obs) {
-  k <- ncol(phi) # Number of variables in the VAR model
+nickells_bias <- function(phi_est, obs) {
+  k <- ncol(phi_est) # Number of variables in the VAR model
   I_k <- diag(k) # Identity matrix of order k
   
   # Calculate the bias correction term
-  bias <- -(I_k + phi) / (obs - 1)
+  unbiased_phi <- (phi_est*(obs-1)+I_k)/(obs-2)
   
-  return(bias)
+  return(unbiased_phi)
 }

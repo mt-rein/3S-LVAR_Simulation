@@ -296,8 +296,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     if(variance_means == "yes"){
       phi_est <- matrix(c(LVAR_phi11, LVAR_phi21, LVAR_phi12, LVAR_phi22),
                         ncol = 2)
-      bias <- nickells_bias(phi_est, obs)
-      phi_corr <- phi_est - bias
+      phi_corr <- nickells_bias(phi_est, obs = obs)
       LVAR_phi11corr <- phi_corr[1, 1]
       LVAR_phi12corr <- phi_corr[1, 2]
       LVAR_phi21corr <- phi_corr[2, 1]
@@ -525,8 +524,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     if(variance_means == "yes"){
       phi_est <- matrix(c(NFS_phi11, NFS_phi21, NFS_phi12, NFS_phi22),
                         ncol = 2)
-      bias <- nickells_bias(phi_est, obs)
-      phi_corr <- phi_est - bias
+      phi_corr <- nickells_bias(phi_est, obs = obs)
       NFS_phi11corr <- phi_corr[1, 1]
       NFS_phi12corr <- phi_corr[1, 2]
       NFS_phi21corr <- phi_corr[2, 1]
@@ -677,8 +675,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     if(variance_means == "yes"){
       phi_est <- matrix(c(SAM_phi11, SAM_phi21, SAM_phi12, SAM_phi22),
                         ncol = 2)
-      bias <- nickells_bias(phi_est, obs)
-      phi_corr <- phi_est - bias
+      phi_corr <- nickells_bias(phi_est, obs = obs)
       SAM_phi11corr <- phi_corr[1, 1]
       SAM_phi12corr <- phi_corr[1, 2]
       SAM_phi21corr <- phi_corr[2, 1]
@@ -797,8 +794,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     if(variance_means == "yes"){
       phi_est <- matrix(c(SEM_phi11, SEM_phi21, SEM_phi12, SEM_phi22),
                         ncol = 2)
-      bias <- nickells_bias(phi_est, obs)
-      phi_corr <- phi_est - bias
+      phi_corr <- nickells_bias(phi_est, obs = obs)
       SEM_phi11corr <- phi_corr[1, 1]
       SEM_phi12corr <- phi_corr[1, 2]
       SEM_phi21corr <- phi_corr[2, 1]
