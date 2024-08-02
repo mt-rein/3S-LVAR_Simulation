@@ -292,21 +292,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
       dplyr::filter(lhs == "f2", op == "~", rhs == "f2_lag") |> 
       dplyr::select(est) |> as.numeric()
     
-    # Nickell's bias correction:
-    if(variance_means == "yes"){
-      phi_est <- matrix(c(LVAR_phi11, LVAR_phi21, LVAR_phi12, LVAR_phi22),
-                        ncol = 2)
-      phi_corr <- nickells_bias(phi_est, obs = obs)
-      LVAR_phi11corr <- phi_corr[1, 1]
-      LVAR_phi12corr <- phi_corr[1, 2]
-      LVAR_phi21corr <- phi_corr[2, 1]
-      LVAR_phi22corr <- phi_corr[2, 2]
-    } else {
-      LVAR_phi11corr <- NA
-      LVAR_phi12corr <- NA
-      LVAR_phi21corr <- NA
-      LVAR_phi22corr <- NA
-    }
     
     LVAR_zeta1 <- LVAR_parameters |>
       dplyr::filter(lhs == "f1", op == "~~", rhs == "f1") |> 
@@ -356,10 +341,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     LVAR_phi12 <- NA
     LVAR_phi21 <- NA
     LVAR_phi22 <- NA
-    LVAR_phi11corr <- NA
-    LVAR_phi12corr <- NA
-    LVAR_phi21corr <- NA
-    LVAR_phi22corr <- NA
     
     LVAR_zeta1 <- NA
     LVAR_zeta2 <- NA
@@ -521,20 +502,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
       dplyr::filter(label == "phi_f2_f2_lag") |>
       dplyr::select(est) |> as.numeric()
     
-    if(variance_means == "yes"){
-      phi_est <- matrix(c(NFS_phi11, NFS_phi21, NFS_phi12, NFS_phi22),
-                        ncol = 2)
-      phi_corr <- nickells_bias(phi_est, obs = obs)
-      NFS_phi11corr <- phi_corr[1, 1]
-      NFS_phi12corr <- phi_corr[1, 2]
-      NFS_phi21corr <- phi_corr[2, 1]
-      NFS_phi22corr <- phi_corr[2, 2]
-    } else {
-      NFS_phi11corr <- NA
-      NFS_phi12corr <- NA
-      NFS_phi21corr <- NA
-      NFS_phi22corr <- NA
-    }
     
     NFS_zeta1 <- NFS_parameters |>
       dplyr::filter(label == "zeta_f1_f1") |>
@@ -577,10 +544,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     NFS_phi12 <- NA
     NFS_phi21 <- NA
     NFS_phi22 <- NA
-    NFS_phi11corr <- NA
-    NFS_phi12corr <- NA
-    NFS_phi21corr <- NA
-    NFS_phi22corr <- NA
     
     NFS_zeta1 <- NA
     NFS_zeta2 <- NA
@@ -672,20 +635,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
       dplyr::filter(label == "phi_f2_f2_lag") |>
       dplyr::select(est) |> as.numeric()
     
-    if(variance_means == "yes"){
-      phi_est <- matrix(c(SAM_phi11, SAM_phi21, SAM_phi12, SAM_phi22),
-                        ncol = 2)
-      phi_corr <- nickells_bias(phi_est, obs = obs)
-      SAM_phi11corr <- phi_corr[1, 1]
-      SAM_phi12corr <- phi_corr[1, 2]
-      SAM_phi21corr <- phi_corr[2, 1]
-      SAM_phi22corr <- phi_corr[2, 2]
-    } else {
-      SAM_phi11corr <- NA
-      SAM_phi12corr <- NA
-      SAM_phi21corr <- NA
-      SAM_phi22corr <- NA
-    }
     
     SAM_zeta1 <- SAM_parameters |>
       dplyr::filter(label == "zeta_f1_f1") |>
@@ -728,10 +677,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     SAM_phi12 <- NA
     SAM_phi21 <- NA
     SAM_phi22 <- NA
-    SAM_phi11corr <- NA
-    SAM_phi12corr <- NA
-    SAM_phi21corr <- NA
-    SAM_phi22corr <- NA
     
     SAM_zeta1 <- NA
     SAM_zeta2 <- NA
@@ -791,21 +736,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
       dplyr::filter(label == "phi_f2_f2_lag") |>
       dplyr::select(est) |> as.numeric()
     
-    if(variance_means == "yes"){
-      phi_est <- matrix(c(SEM_phi11, SEM_phi21, SEM_phi12, SEM_phi22),
-                        ncol = 2)
-      phi_corr <- nickells_bias(phi_est, obs = obs)
-      SEM_phi11corr <- phi_corr[1, 1]
-      SEM_phi12corr <- phi_corr[1, 2]
-      SEM_phi21corr <- phi_corr[2, 1]
-      SEM_phi22corr <- phi_corr[2, 2]
-    } else {
-      SEM_phi11corr <- NA
-      SEM_phi12corr <- NA
-      SEM_phi21corr <- NA
-      SEM_phi22corr <- NA
-    }
-    
     SEM_zeta1 <- SEM_parameters |>
       dplyr::filter(label == "zeta_f1_f1") |>
       dplyr::select(est) |> as.numeric()
@@ -847,10 +777,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
     SEM_phi12 <- NA
     SEM_phi21 <- NA
     SEM_phi22 <- NA
-    SEM_phi11corr <- NA
-    SEM_phi12corr <- NA
-    SEM_phi21corr <- NA
-    SEM_phi22corr <- NA
     
     SEM_zeta1 <- NA
     SEM_zeta2 <- NA
@@ -881,8 +807,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
               "kappa_f1" = kappa_f1, "kappa_f2" = kappa_f2,
               "LVAR_phi11" = LVAR_phi11, "LVAR_phi12" = LVAR_phi12,
               "LVAR_phi21" = LVAR_phi21, "LVAR_phi22" = LVAR_phi22,
-              "LVAR_phi11corr" = LVAR_phi11corr, "LVAR_phi12corr" = LVAR_phi12corr,
-              "LVAR_phi21corr" = LVAR_phi21corr, "LVAR_phi22corr" = LVAR_phi22corr,
               "LVAR_zeta1" = LVAR_zeta1, "LVAR_zeta2" = LVAR_zeta2, "LVAR_zeta12" = LVAR_zeta12,
               "LVAR_phi11_se" = LVAR_phi11_se, "LVAR_phi12_se" = LVAR_phi12_se,
               "LVAR_phi21_se" = LVAR_phi21_se, "LVAR_phi22_se" = LVAR_phi22_se,
@@ -892,24 +816,18 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
               "LVAR_zeta1_secorr" = LVAR_zeta1_secorr, "LVAR_zeta2_secorr" = LVAR_zeta2_secorr, "LVAR_zeta12_secorr" = LVAR_zeta12_secorr,
               "NFS_phi11" = NFS_phi11, "NFS_phi12" = NFS_phi12,
               "NFS_phi21" = NFS_phi21, "NFS_phi22" = NFS_phi22,
-              "NFS_phi11corr" = NFS_phi11corr, "NFS_phi12corr" = NFS_phi12corr,
-              "NFS_phi21corr" = NFS_phi21corr, "NFS_phi22corr" = NFS_phi22corr,
               "NFS_zeta1" = NFS_zeta1, "NFS_zeta2" = NFS_zeta2, "NFS_zeta12" = NFS_zeta12,
               "NFS_phi11_se" = NFS_phi11_se, "NFS_phi12_se" = NFS_phi12_se,
               "NFS_phi21_se" = NFS_phi21_se, "NFS_phi22_se" = NFS_phi22_se,
               "NFS_zeta1_se" = NFS_zeta1_se, "NFS_zeta2_se" = NFS_zeta2_se, "NFS_zeta12_se" = NFS_zeta12_se,
               "SAM_phi11" = SAM_phi11, "SAM_phi12" = SAM_phi12,
               "SAM_phi21" = SAM_phi21, "SAM_phi22" = SAM_phi22,
-              "SAM_phi11corr" = SAM_phi11corr, "SAM_phi12corr" = SAM_phi12corr,
-              "SAM_phi21corr" = SAM_phi21corr, "SAM_phi22corr" = SAM_phi22corr,
               "SAM_zeta1" = SAM_zeta1, "SAM_zeta2" = SAM_zeta2, "SAM_zeta12" = SAM_zeta12,
               "SAM_phi11_se" = SAM_phi11_se, "SAM_phi12_se" = SAM_phi12_se,
               "SAM_phi21_se" = SAM_phi21_se, "SAM_phi22_se" = SAM_phi22_se,
               "SAM_zeta1_se" = SAM_zeta1_se, "SAM_zeta2_se" = SAM_zeta2_se, "SAM_zeta12_se" = SAM_zeta12_se,
               "SEM_phi11" = SEM_phi11, "SEM_phi12" = SEM_phi12,
               "SEM_phi21" = SEM_phi21, "SEM_phi22" = SEM_phi22,
-              "SEM_phi11corr" = SEM_phi11corr, "SEM_phi12corr" = SEM_phi12corr,
-              "SEM_phi21corr" = SEM_phi21corr, "SEM_phi22corr" = SEM_phi22corr,
               "SEM_zeta1" = SEM_zeta1, "SEM_zeta2" = SEM_zeta2, "SEM_zeta12" = SEM_zeta12,
               "SEM_phi11_se" = SEM_phi11_se, "SEM_phi12_se" = SEM_phi12_se,
               "SEM_phi21_se" = SEM_phi21_se, "SEM_phi22_se" = SEM_phi22_se,
@@ -936,7 +854,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE){
               "SAM_error_text" = SAM_error_text, 
               "SEM_error_text" = SEM_error_text)
   
-  for(i in 124:137){
+  for(i in 108:121){
     output[i] <- str_squish(output[i])                                          # removes all whitespace and linebreaks from the error and warning strings
     output[i] <- gsub(",", "", output[i])                                       # removes all commata from error and warning strings (to prevent messing up the CSV file)
   }
