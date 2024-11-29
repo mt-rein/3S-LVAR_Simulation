@@ -118,10 +118,9 @@ results |>
 failed_iterations <- results$iteration[results$SAM_error]
 
 cond_reestimation <- cond[cond$iteration %in% failed_iterations, ]
-rownames(cond_reestimation) <- 1:nrow(cond_reestimation)
-used_seeds <- cond$seed
-new_seeds <- (1:100000)[!(1:100000 %in% used_seeds)]
-cond_reestimation$seed <- sample(new_seeds, size = nrow(cond_reestimation), replace = FALSE)
+
+# replace do_sim() function with modified function (new seed before SAM estimation)
+source("do_sim_reestimation.R")
 
 ## open cluster
 numCores <- detectCores() - 1
@@ -149,7 +148,7 @@ parabar::evaluate(backend, {
   source("step3.R")
   source("SEcorrection.R")
   source("auxilliary functions.R")
-  source("do_sim.R")
+  source("do_sim_reestimation.R")
 })
 
 ## load condition grid into cluster
@@ -165,3 +164,34 @@ if(file.exists(outputfile)){
 
 ## close cluster
 stop_backend(backend)
+
+
+## check if re-estimation solved the errors
+results_reestimation <- read_csv("Data/output_sim_reestimation.csv",
+                                 col_types = cols(LVAR_step1_warning_text = col_character(),
+                                                  LVAR_step2_warning_text = col_character(),
+                                                  LVAR_step3_warning_text = col_character(),
+                                                  SEcorr_warning_text = col_character(),
+                                                  NFS_warning_text = col_character(),
+                                                  SAM_warning_text = col_character(),
+                                                  SEM_warning_text = col_character(),
+                                                  LVAR_step1_error_text = col_character(),
+                                                  LVAR_step2_error_text = col_character(),
+                                                  LVAR_step3_error_text = col_character(),
+                                                  SEcorr_error_text = col_character(),
+                                                  NFS_error_text = col_character(),
+                                                  SAM_error_text = col_character(),
+                                                  SEM_error_text = col_character())) |> 
+  mutate(phi_size = factor(phi_size, levels = c("small", "large")),
+         rho_gen = factor(rho_gen, levels = c("small", "medium", "large", "very large")),
+         variance_means = factor(variance_means, levels = c("yes", "no")),
+         variance_zeta = factor(variance_zeta, levels = c("yes", "no")),
+         variance_phi = factor(variance_phi, levels = c("yes", "no"))
+  ) |> 
+  arrange(iteration)                                                            # sort by iteration
+
+# check for any errors in re-estimated iterations:
+results_reestimation |> 
+  dplyr::select(ends_with("error")) |> 
+  colSums()
+# Still errors in all 58 data sets

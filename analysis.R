@@ -25,37 +25,8 @@ results <- read_csv("Data/output_sim.csv",
   ) |> 
   arrange(iteration)                                                            # sort by iteration
 
-results_reestimation <- read_csv("Data/output_sim_reestimation.csv",
-                                 col_types = cols(LVAR_step1_warning_text = col_character(),
-                                                  LVAR_step2_warning_text = col_character(),
-                                                  LVAR_step3_warning_text = col_character(),
-                                                  SEcorr_warning_text = col_character(),
-                                                  NFS_warning_text = col_character(),
-                                                  SAM_warning_text = col_character(),
-                                                  SEM_warning_text = col_character(),
-                                                  LVAR_step1_error_text = col_character(),
-                                                  LVAR_step2_error_text = col_character(),
-                                                  LVAR_step3_error_text = col_character(),
-                                                  SEcorr_error_text = col_character(),
-                                                  NFS_error_text = col_character(),
-                                                  SAM_error_text = col_character(),
-                                                  SEM_error_text = col_character())) |> 
-  mutate(phi_size = factor(phi_size, levels = c("small", "large")),
-         rho_gen = factor(rho_gen, levels = c("small", "medium", "large", "very large")),
-         variance_means = factor(variance_means, levels = c("yes", "no")),
-         variance_zeta = factor(variance_zeta, levels = c("yes", "no")),
-         variance_phi = factor(variance_phi, levels = c("yes", "no"))
-  ) |> 
-  arrange(iteration)                                                            # sort by iteration
-
-# check for any errors in re-estimated iterations:
-results_reestimation |> 
-  dplyr::select(ends_with("error")) |> 
-  colSums()
-# no more errors
-
-failed_iterations <- results$iteration[results$SAM_error]
-results_clean <- rbind(results[!(results$iteration %in% failed_iterations), ], results_reestimation)
+# remove data sets where SAM had an error:
+results_clean <- results[!results$SAM_error, ]
 
 # check if any parameters were not estimated
 results_clean |> 
