@@ -1,1 +1,1 @@
-This repository contains the code for the simulation study of the publication [Latent Vector Autoregressive Modeling: A Stepwise Estimation Approach (Rein, Vermunt, De Roover, Vogelsmeier, 2024)](https://doi.org/10.1080/10705511.2024.2398034). 
+This repository contains the code for the simulation study of the publication [Latent Vector Autoregressive Modeling: A Stepwise Estimation Approach (Rein, Vermunt, De Roover, Vogelsmeier, 2025)](https://doi.org/10.1080/10705511.2024.2398034). 
