@@ -1,0 +1,1 @@
+This repository contains the code for the simulation study of the publication [Latent Vector Autoregressive Modeling: A Stepwise Estimation Approach (Rein, Vermunt, De Roover, Vogelsmeier, 2023)](https://osf.io/preprints/psyarxiv/a2muk). 
